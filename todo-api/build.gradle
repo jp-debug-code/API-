@@ -1,0 +1,65 @@
+plugins {
+	id 'java'
+	id 'org.springframework.boot' version '2.7.13'
+	id 'io.spring.dependency-management' version '1.0.15.RELEASE'
+	id "org.openapi.generator" version "6.6.0"
+}
+
+group = 'com.example'
+version = '0.0.1-SNAPSHOT'
+
+java {
+	sourceCompatibility = '11'
+}
+
+repositories {
+	mavenCentral()
+}
+configurations {
+	compileOnly {
+		extendsFrom annotationProcessor
+	}
+}
+
+dependencies {
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	implementation 'org.springframework.boot:spring-boot-starter-validation'
+	compileOnly 'io.swagger.core.v3:swagger-annotations:2.2.5'
+	compileOnly 'org.projectlombok:lombok'
+	annotationProcessor 'org.projectlombok:lombok'
+	implementation 'org.mybatis.spring.boot:mybatis-spring-boot-starter:2.3.1'
+	developmentOnly 'org.springframework.boot:spring-boot-devtools'
+	runtimeOnly 'com.h2database:h2'
+	implementation 'org.openapitools:jackson-databind-nullable:0.2.6'
+}
+
+tasks.named('test') {
+	useJUnitPlatform()
+}
+task buildApiDoc(type: org.openapitools.generator.gradle.plugin.tasks.GenerateTask) {
+	generatorName.set("html2")
+	inputSpec.set("$rootDir/src/main/resources/api-schema.yaml".toString())
+	additionalProperties.set([
+			packageName: "petstore"
+	])
+	outputDir.set("$buildDir/apidoc".toString()) //生成するHTMLファイルの場所
+	configOptions.set([
+			dateLibrary: "threetenp"
+	])
+	task buildringServer(type: org.openapitools.generator.gradle.plugin.tasks.GenerateTask) {
+		generatorName.set("spring")
+		inputSpec.set("$rootDir/src/main/resources/api-schema.yaml".toString())
+		outputDir.set("$buildDir/spring".toString()) //生成場所
+		apiPackage.set("com.example.todoapi.controller")
+
+		modelPackage.set("com.example.todoapi.controller.model")
+		configOptions.set([
+				interfaceOnly: "true"
+		])
+
+
+	}
+	compileJava.dependsOn tasks.buildringServer
+	sourceSets.main.java.srcDir("$buildDir/spring/src/main/java")//HealthController（public class HealthController implements HealthApi）の参照先
+}
